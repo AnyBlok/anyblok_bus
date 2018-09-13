@@ -24,8 +24,8 @@
     :target: https://doc.anyblok-bus.anyblok.org/?badge=latest
 
 
-AnyBlok / Dramatiq
-==================
+AnyBlok / bus
+=============
 
 Improve AnyBlok `AnyBlok <http://doc.anyblok.org>`_ to add comunication with bus.
 
