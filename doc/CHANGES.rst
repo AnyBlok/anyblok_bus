@@ -11,8 +11,8 @@
 CHANGELOG
 =========
 
-1.0.0
------
+1.0.0 (2018-09-15)
+------------------
 
 * Improved logging: for helping to debug the messages
 * Added create and update date columns
