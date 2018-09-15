@@ -27,7 +27,15 @@
 AnyBlok / bus
 =============
 
-Improve AnyBlok `AnyBlok <http://doc.anyblok.org>`_ to add comunication with bus.
+Improve `AnyBlok <http://doc.anyblok.org>`_ to add comunication with bus.
+
++---------+--------------+------------------------------------------------------------------+
+| Blok    | Dependancies | Description                                                      |
++=========+==============+==================================================================+
+| **bus** |              | Consume and publish message with                                 |
+|         |              | `pika <https://pika.readthedocs.io/en/stable/>`_ and             |
+|         |              | `marshmallow <https://github.com/marshmallow-code/marshmallow>`_ |
++---------+--------------+------------------------------------------------------------------+
 
 AnyBlok / Bus is released under the terms of the `Mozilla Public License`.
 
