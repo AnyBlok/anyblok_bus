@@ -8,8 +8,8 @@
 
 .. contents::
 
-Memento
-=======
+Usage
+=====
 
 Declare a new consumer
 ----------------------

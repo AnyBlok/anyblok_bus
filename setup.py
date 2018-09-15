@@ -9,7 +9,7 @@
 from setuptools import setup, find_packages
 import os
 
-version = '0.1.0'
+version = '1.0.0'
 
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -17,6 +17,10 @@ here = os.path.abspath(os.path.dirname(__file__))
 with open(os.path.join(here, 'README.rst'), 'r',
           encoding='utf-8') as readme_file:
     readme = readme_file.read()
+
+with open(os.path.join(here, 'doc', 'MEMENTO.rst'), 'r',
+          encoding='utf-8') as memento_file:
+    memento = memento_file.read()
 
 with open(
     os.path.join(here, 'doc', 'CHANGES.rst'), 'r', encoding='utf-8'
@@ -39,7 +43,7 @@ setup(
     name='anyblok_bus',
     version=version,
     description="Bus for anyblok",
-    long_description=readme + '\n' + FRONT + '\n' + CHANGES,
+    long_description=readme + '\n' + memento + '\n' + FRONT + '\n' + CHANGES,
     author="jssuzanne",
     author_email='jssuzanne@anybox.fr',
     url="http://docs.anyblok-bus.anyblok.org/%s" % version,

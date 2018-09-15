@@ -33,7 +33,7 @@ Improve `AnyBlok <http://doc.anyblok.org>`_ to add comunication with bus.
 | Blok    | Dependancies | Description                                                      |
 +=========+==============+==================================================================+
 | **bus** |              | Consume and publish message with                                 |
-|         |              | `pika <https://pika.readthedocs.io/en/stable/>`_ and             |
+|         |              | `pika <https://pika.readthedocs.io>`_ and                        |
 |         |              | `marshmallow <https://github.com/marshmallow-code/marshmallow>`_ |
 +---------+--------------+------------------------------------------------------------------+
 

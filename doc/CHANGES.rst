@@ -11,6 +11,14 @@
 CHANGELOG
 =========
 
+1.0.0
+-----
+
+* Improved logging: for helping to debug the messages
+* Added create and update date columns
+* fixed ``consume_all`` method. now the method does not stop when an exception is raised
+* Used marsmallow version >= 3.0.0
+
 0.1.0 (2018-06-05)
 ------------------
 

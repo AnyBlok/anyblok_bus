@@ -25,14 +25,6 @@ http://pypi.python.org/pypi/anyblok_bus.
 The most recent published version of this documentation should be at
 http://doc.anyblok-bus.anyblok.org.
 
-Project Status
---------------
-
-AnyBlok with bus is currently in beta status and is expected to be fairly
-stable.   Users should take care to report bugs and missing features on an as-needed
-basis.  It should be expected that the development version may be required
-for proper implementation of recently repaired issues in between releases;
-
 Installation
 ------------
 
@@ -68,7 +60,7 @@ by the decorator **anyblok_bus.bus_consumer**::
 Dependencies
 ------------
 
-AnyBlok / Bus works with **Python 3.3** and later and `pika <http://pika.readthedocs.io>`_. The install process will
+AnyBlok / Bus works with **Python 3.3** and later and `pika <https://pika.readthedocs.io>`_. The install process will
 ensure that `AnyBlok <http://doc.anyblok.org>`_ is installed, in addition to other 
 dependencies. The latest version of them is strongly recommended.
 
@@ -83,6 +75,11 @@ Contributors
 `Anybox <http://anybox.fr>`_ team:
 
 * Jean-Sébastien Suzanne
+* Florent Jouatte
+
+`Sensee <http://sensee.com>`_ team:
+
+* Julien SZKUDLAPSKI
 
 Bugs
 ----
