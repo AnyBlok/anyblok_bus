@@ -11,7 +11,7 @@
 CHANGELOG
 =========
 
-1.0.0 (2018-09-15)
+1.1.0 (2018-09-15)
 ------------------
 
 * Improved logging: for helping to debug the messages
@@ -19,7 +19,7 @@ CHANGELOG
 * fixed ``consume_all`` method. now the method does not stop when an exception is raised
 * Used marsmallow version >= 3.0.0
 
-0.1.0 (2018-06-05)
+1.0.0 (2018-06-05)
 ------------------
 
 * add Worker to consume the message from rabbitmq
