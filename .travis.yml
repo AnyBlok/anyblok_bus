@@ -28,8 +28,8 @@ install:
   - pip install -U pip
   # only eggs: do an erreur with wheel
   - if [[ $TRAVIS_PYTHON_VERSION == '3.3' ]]; then pip install testfixtures; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == '3.7-dev' ]]; then pip install python_editor texttable PyYAML; fi
-  - if [[ $TRAVIS_PYTHON_VERSION == 'nightly' ]]; then pip install python_editor texttable PyYAML; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == '3.7-dev' ]]; then pip install python_editor texttable PyYAML furl; fi
+  - if [[ $TRAVIS_PYTHON_VERSION == 'nightly' ]]; then pip install python_editor texttable PyYAML furl; fi
   # only wheel
   - pip install wheel
   - pip install psycopg2
