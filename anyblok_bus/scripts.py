@@ -75,7 +75,7 @@ def anyblok_bus():
 
     :param application: name of the application
     :param configuration_groups: list configuration groupe to load
-    :param \**kwargs: ArgumentParser named arguments
+    :param **kwargs: ArgumentParser named arguments
     """
     load_init_function_from_entry_points()
     Configuration.load('bus')

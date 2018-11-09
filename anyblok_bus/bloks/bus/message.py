@@ -56,5 +56,5 @@ class Message:
             try:
                 with cls.registry.begin_nested():  # savepoint
                     consumer.consume()
-            except:
+            except Exception:
                 pass
