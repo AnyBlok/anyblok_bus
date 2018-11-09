@@ -38,7 +38,7 @@ install:
   - pip install coverage
   - pip install nose
   - pip install coveralls
-  - python setup.py develop
+  - pip install .
 
 env:
   global:
@@ -47,7 +47,7 @@ env:
     - ANYBLOK_DATABASE_USER=postgres
 
 script:
-  - flake8 anyblok
+  - flake8 anyblok_bus
   - psql -c 'create database travis_ci_test;' -U postgres
   - nosetests anyblok_bus/tests -v -s --with-coverage --cover-package=anyblok_bus
   
