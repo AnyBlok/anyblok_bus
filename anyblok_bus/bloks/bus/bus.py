@@ -68,16 +68,20 @@ class Bus:
     @classmethod
     def get_consumers(cls):
         """Return the list of the consumers"""
-        consumers = []
+        grouped_consumers = []
+        consumers = [(Configuration.get('bus_processes', 1), grouped_consumers)]
         queues = []
         for Model in cls.registry.loaded_namespaces.values():
-            for queue, consumer in Model.bus_consumers:
+            for queue, consumer, processes in Model.bus_consumers:
                 if queue in queues:
                     raise TwiceQueueConsumptionException(
                         "The consumation of the queue %r is already defined" % (
                             queue))
 
                 queues.append(queue)
-                consumers.append((queue, Model, consumer))
+                if processes == 0:
+                    grouped_consumers.append((queue, Model, consumer))
+                else:
+                    consumers.append((processes, [(queue, Model, consumer)]))
 
         return consumers

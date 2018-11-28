@@ -26,7 +26,7 @@ Configuration.add_application_properties(
 )
 
 
-def bus_worker_process(worker_id, logging_fd, consumers):
+def bus_worker_process(logging_fd, consumers):
     """consume worker to process messages and execute the actor"""
     # TODO preload registries
     db_name = Configuration.get('db_name')
@@ -66,31 +66,31 @@ def bus_worker_process(worker_id, logging_fd, consumers):
     logging_pipe.close()
 
 
-def anyblok_bus():
+def anyblok_bus():  # noqa
     """Run consumer workers process to consume queue
-
-    :param application: name of the application
-    :param configuration_groups: list configuration groupe to load
-    :param **kwargs: ArgumentParser named arguments
     """
     registry = start('bus', loadwithoutmigration=True)
     if not registry:
         exit(1)
 
-    consumers = registry.Bus.get_consumers()
+    all_consumers = registry.Bus.get_consumers()
+    registry.close()  # close the registry to recreate it in each process
+
     worker_pipes = []
     worker_processes = []
-    for worker_id in range(Configuration.get('bus_processes', 1)):
-        read_fd, write_fd = os.pipe()
-        pid = os.fork()
-        if pid != 0:
-            os.close(write_fd)
-            worker_pipes.append(os.fdopen(read_fd))
-            worker_processes.append(pid)
-            continue
+    for processes, consumers in all_consumers:
+        logger.debug('Consume %r, with %r processes', consumers, processes)
+        for worker_id in range(processes):
+            read_fd, write_fd = os.pipe()
+            pid = os.fork()
+            if pid != 0:
+                os.close(write_fd)
+                worker_pipes.append(os.fdopen(read_fd))
+                worker_processes.append(pid)
+                continue
 
-        os.close(read_fd)
-        return bus_worker_process(worker_id, write_fd, consumers)
+            os.close(read_fd)
+            return bus_worker_process(write_fd, consumers)
 
     def sighandler(signum, frame):
         nonlocal worker_processes

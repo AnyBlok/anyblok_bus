@@ -18,7 +18,14 @@ class BusConfigurationException(Exception):
     """Simple exception if error with Schema"""
 
 
-def bus_consumer(queue_name=None, schema=None):
+class ConsumerDescription:
+    def __init__(self, queue_name, processes, **kwargs):
+        self.queue_name = queue_name
+        self.processes = processes
+        self.kwargs = kwargs
+
+
+def bus_consumer(queue_name=None, schema=None, processes=0):
     autodoc = "Consumer: queue %r, schema %r" % (queue_name, schema)
 
     if schema is None:
@@ -33,8 +40,8 @@ def bus_consumer(queue_name=None, schema=None):
     def wrapper(method):
         add_autodocs(method, autodoc)
         method.is_a_bus_consumer = True
-        method.schema = schema
-        method.queue_name = queue_name
+        method.consumer = ConsumerDescription(
+            queue_name, processes, schema=schema)
         return classmethod(method)
 
     return wrapper
@@ -72,7 +79,7 @@ class BusConsumerPlugin(ModelPluginBase):
         """
         tp = transformation_properties
         if hasattr(method, 'is_a_bus_consumer') and method.is_a_bus_consumer:
-            tp['bus_consumers'][attr] = (method.queue_name, method.schema)
+            tp['bus_consumers'][attr] = method.consumer
 
     def insert_in_bases(self, new_base, namespace, properties,
                         transformation_properties):
@@ -84,16 +91,28 @@ class BusConsumerPlugin(ModelPluginBase):
         :param transformation_properties: the properties of the model
         """
         for consumer in transformation_properties['bus_consumers']:
+            self.apply_consumer(consumer, new_base, properties,
+                                transformation_properties)
 
-            def wrapper(cls, body=None):
-                schema = transformation_properties['bus_consumers'][consumer][
-                    1]
+    def apply_consumer(self, consumer, new_base, properties,
+                       transformation_properties):
+        """Insert in a base the overload
 
-                schema.context['registry'] = self.registry
-                data = schema.load(loads(body))
-                return getattr(super(new_base, cls), consumer)(body=data)
+        :param new_base: the base to be put on front of all bases
+        :param properties: the properties declared in the model
+        :param transformation_properties: the properties of the model
+        """
+        consumer_description = transformation_properties['bus_consumers'][
+            consumer]
 
-            wrapper.__name__ = consumer
-            setattr(new_base, consumer, classmethod(wrapper))
-            queue, _ = transformation_properties['bus_consumers'][consumer]
-            properties['bus_consumers'].append((queue, consumer))
+        def wrapper(cls, body=None):
+            schema = consumer_description.kwargs['schema']
+            schema.context['registry'] = self.registry
+            data = schema.load(loads(body))
+            return getattr(super(new_base, cls), consumer)(body=data)
+
+        wrapper.__name__ = consumer
+        setattr(new_base, consumer, classmethod(wrapper))
+        properties['bus_consumers'].append(
+            (consumer_description.queue_name,
+             consumer, consumer_description.processes))
