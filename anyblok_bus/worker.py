@@ -27,7 +27,7 @@ class Worker:
     :param profile: the name of the profile which give the url of rabbitmq
     """
 
-    def __init__(self, registry, profile, withautocommit=True):
+    def __init__(self, registry, profile, consumers, withautocommit=True):
         self.registry = registry
         self.profile = self.registry.Bus.Profile.query().filter_by(
             name=profile
@@ -37,6 +37,7 @@ class Worker:
         self._closing = False
         self._consumer_tags = []
         self.ready = False
+        self.consumers = consumers
         self.withautocommit = withautocommit
 
     def connect(self):
@@ -74,7 +75,7 @@ class Worker:
         logger.info('Channel opened')
         self._channel = channel
         self._channel.add_on_close_callback(self.on_channel_closed)
-        for queue, model, method in self.registry.Bus.get_consumers():
+        for queue, model, method in self.consumers:
             self.declare_consumer(queue, model, method)
 
         self.ready = True

@@ -15,7 +15,12 @@ from anyblok_bus.status import MessageStatus
 import pika
 from anyblok.config import Configuration
 from contextlib import contextmanager
-from pika.exceptions import ProbableAccessDeniedError, ChannelClosed
+try:
+    from pika.exceptions import ChannelClosed, ConnectionClosedByBroker
+except ImportError:
+    from pika.exceptions import (
+        ProbableAccessDeniedError as ConnectionClosedByBroker, ChannelClosed)
+
 from anyblok_bus.worker import Worker
 from threading import Thread
 pika_url = 'amqp://guest:guest@localhost:5672/%2F'
@@ -40,13 +45,9 @@ def get_channel():
 
         yield channel
     finally:
-        if channel and not channel.is_closed and not channel.is_closing:
+        if channel and not channel.is_closed:
             channel.close()
-        if (
-            connection and
-            not connection.is_closed and
-            not connection.is_closing
-        ):
+        if connection and not connection.is_closed:
             connection.close()
 
 
@@ -81,7 +82,7 @@ class TestPublish(DBTestCase):
         registry.Bus.Profile.insert(
             name=bus_profile,
             url='amqp://guest:guest@localhost:5672/%2Fwrongvhost')
-        with self.assertRaises(ProbableAccessDeniedError):
+        with self.assertRaises(ConnectionClosedByBroker):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'hello': 'world'}),
                                  'application/json')
@@ -103,7 +104,12 @@ class TestPublish(DBTestCase):
 class AnyBlokWorker(Thread):
     def __init__(self, registry, profile):
         super(AnyBlokWorker, self).__init__()
-        self.worker = Worker(registry, profile, withautocommit=False)
+        consumers = registry.Bus.get_consumers()
+        if consumers:
+            consumers = consumers[0][1]
+
+        self.worker = Worker(registry, profile, consumers,
+                             withautocommit=False)
 
     def run(self):
         self.worker.start()

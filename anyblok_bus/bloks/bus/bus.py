@@ -56,28 +56,32 @@ class Bus:
             logger.error("publishing failed with : %r", e)
             raise
         finally:
-            if channel and not channel.is_closed and not channel.is_closing:
+            if channel and not channel.is_closed:
                 channel.close()
-            if (
-                _connection and
-                not _connection.is_closed and
-                not _connection.is_closing
-            ):
+            if _connection and not _connection.is_closed:
                 _connection.close()
 
     @classmethod
     def get_consumers(cls):
         """Return the list of the consumers"""
+        grouped_consumers = []
         consumers = []
         queues = []
         for Model in cls.registry.loaded_namespaces.values():
-            for queue, consumer in Model.bus_consumers:
+            for queue, consumer, processes in Model.bus_consumers:
                 if queue in queues:
                     raise TwiceQueueConsumptionException(
                         "The consumation of the queue %r is already defined" % (
                             queue))
 
                 queues.append(queue)
-                consumers.append((queue, Model, consumer))
+                if processes == 0:
+                    grouped_consumers.append((queue, Model, consumer))
+                else:
+                    consumers.append((processes, [(queue, Model, consumer)]))
+
+        if grouped_consumers:
+            consumers.append(
+                (Configuration.get('bus_processes', 1), grouped_consumers))
 
         return consumers
