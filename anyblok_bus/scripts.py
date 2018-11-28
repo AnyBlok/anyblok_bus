@@ -8,7 +8,7 @@
 import os
 import signal
 import time
-from anyblok import load_init_function_from_entry_points
+from anyblok import start
 from anyblok.config import Configuration
 from anyblok.blok import BlokManager
 from anyblok.registry import RegistryManager
@@ -26,19 +26,15 @@ Configuration.add_application_properties(
 )
 
 
-def bus_worker_process(worker_id, logging_fd):
+def bus_worker_process(worker_id, logging_fd, consumers):
     """consume worker to process messages and execute the actor"""
     # TODO preload registries
     db_name = Configuration.get('db_name')
     profile = Configuration.get('bus_profile')
     try:
         logging_pipe = os.fdopen(logging_fd, "w")
-        BlokManager.load()
         registry = RegistryManager.get(db_name, loadwithoutmigration=True)
-        if registry is None:
-            logger.critical("No registry found for %s", db_name)
-            return os._exit(4)
-        worker = Worker(registry, profile)
+        worker = Worker(registry, profile, consumers)
         worker.start()
     except ImportError as e:
         logger.critical(e)
@@ -77,9 +73,11 @@ def anyblok_bus():
     :param configuration_groups: list configuration groupe to load
     :param **kwargs: ArgumentParser named arguments
     """
-    load_init_function_from_entry_points()
-    Configuration.load('bus')
+    registry = start('bus', loadwithoutmigration=True)
+    if not registry:
+        exit(1)
 
+    consumers = registry.Bus.get_consumers()
     worker_pipes = []
     worker_processes = []
     for worker_id in range(Configuration.get('bus_processes', 1)):
@@ -92,7 +90,7 @@ def anyblok_bus():
             continue
 
         os.close(read_fd)
-        return bus_worker_process(worker_id, write_fd)
+        return bus_worker_process(worker_id, write_fd, consumers)
 
     def sighandler(signum, frame):
         nonlocal worker_processes
