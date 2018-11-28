@@ -56,20 +56,16 @@ class Bus:
             logger.error("publishing failed with : %r", e)
             raise
         finally:
-            if channel and not channel.is_closed and not channel.is_closing:
+            if channel and not channel.is_closed:
                 channel.close()
-            if (
-                _connection and
-                not _connection.is_closed and
-                not _connection.is_closing
-            ):
+            if _connection and not _connection.is_closed:
                 _connection.close()
 
     @classmethod
     def get_consumers(cls):
         """Return the list of the consumers"""
         grouped_consumers = []
-        consumers = [(Configuration.get('bus_processes', 1), grouped_consumers)]
+        consumers = []
         queues = []
         for Model in cls.registry.loaded_namespaces.values():
             for queue, consumer, processes in Model.bus_consumers:
@@ -83,5 +79,9 @@ class Bus:
                     grouped_consumers.append((queue, Model, consumer))
                 else:
                     consumers.append((processes, [(queue, Model, consumer)]))
+
+        if grouped_consumers:
+            consumers.append(
+                (Configuration.get('bus_processes', 1), grouped_consumers))
 
         return consumers

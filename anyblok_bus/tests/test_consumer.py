@@ -6,6 +6,7 @@
 # v. 2.0. If a copy of the MPL was not distributed with this file,You can
 # obtain one at http://mozilla.org/MPL/2.0/.
 from anyblok.tests.testcase import DBTestCase
+from anyblok.config import Configuration
 from anyblok_bus.consumer import (
     bus_consumer, SchemaException, BusConfigurationException)
 from anyblok_bus.bloks.bus.exceptions import TwiceQueueConsumptionException
@@ -155,10 +156,38 @@ class TestValidator(DBTestCase):
                     return body
 
         registry = self.init_registry_with_bloks(('bus',), add_in_registry)
+        # [(nb processes, [(queue, Model, method)])]
+        self.assertEqual(len(registry.Bus.get_consumers()), 1)
+        self.assertEqual(len(registry.Bus.get_consumers()[0]), 2)
+        self.assertEqual(len(registry.Bus.get_consumers()[0][1]), 2)
+
+    def test_with_two_decorator_in_different_processes(self):
+
+        def add_in_registry():
+            @Declarations.register(Declarations.Model)
+            class Test:
+
+                @bus_consumer(queue_name='test1', schema=OneSchema(),
+                              processes=1)
+                def decorated_method1(cls, body=None):
+                    return body
+
+                @bus_consumer(queue_name='test2', schema=OneSchema(),
+                              processes=1)
+                def decorated_method2(cls, body=None):
+                    return body
+
+        registry = self.init_registry_with_bloks(('bus',), add_in_registry)
+        # [(nb processes, [(queue, Model, method)])]
         self.assertEqual(len(registry.Bus.get_consumers()), 2)
+        self.assertEqual(len(registry.Bus.get_consumers()[0]), 2)
+        self.assertEqual(len(registry.Bus.get_consumers()[0][1]), 1)
+        self.assertEqual(len(registry.Bus.get_consumers()[1]), 2)
+        self.assertEqual(len(registry.Bus.get_consumers()[1][1]), 1)
 
     def test_consumer_add_in_get_profile(self):
         registry = self.init_registry_with_bloks(
             ('bus',), self.add_in_registry, schema=OneSchema())
         self.assertEqual(registry.Bus.get_consumers(),
-                         [('test', registry.Test, 'decorated_method')])
+                         [(Configuration.get('bus_processes', 1),
+                           [('test', registry.Test, 'decorated_method')])])
