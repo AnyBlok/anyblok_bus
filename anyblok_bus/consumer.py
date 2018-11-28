@@ -7,11 +7,10 @@
 # obtain one at http://mozilla.org/MPL/2.0/.
 from anyblok.common import add_autodocs
 from anyblok.model.plugins import ModelPluginBase
-from json import loads
+from logging import getLogger
+from .adapter import schema_adapter
 
-
-class SchemaException(Exception):
-    """Simple exception if error with Schema"""
+logger = getLogger(__name__)
 
 
 class BusConfigurationException(Exception):
@@ -19,29 +18,35 @@ class BusConfigurationException(Exception):
 
 
 class ConsumerDescription:
-    def __init__(self, queue_name, processes, **kwargs):
+    def __init__(self, queue_name, processes, adapter, **kwargs):
         self.queue_name = queue_name
         self.processes = processes
+        self.adapter = adapter
         self.kwargs = kwargs
 
+    def adapt(self, registry, body):
+        if not self.adapter:
+            return body
 
-def bus_consumer(queue_name=None, schema=None, processes=0):
-    autodoc = "Consumer: queue %r, schema %r" % (queue_name, schema)
+        return self.adapter(registry, body, **self.kwargs)
 
-    if schema is None:
-        raise SchemaException("No existing schema")
+
+def bus_consumer(queue_name=None, adapter=None, processes=0, **kwargs):
+    if adapter is None and 'schema' in kwargs:
+        adapter = schema_adapter  # keep compatibility
+
+    autodoc = "Consumer: queue %r, adapter %r, kwargs %r" % (
+        queue_name, adapter, kwargs)
+    logger.debug(autodoc)
 
     if queue_name is None:
         raise BusConfigurationException("No queue name")
-
-    if not hasattr(schema, 'load'):
-        raise SchemaException("Schema %r have not load method" % schema)
 
     def wrapper(method):
         add_autodocs(method, autodoc)
         method.is_a_bus_consumer = True
         method.consumer = ConsumerDescription(
-            queue_name, processes, schema=schema)
+            queue_name, processes, adapter, **kwargs)
         return classmethod(method)
 
     return wrapper
@@ -106,9 +111,7 @@ class BusConsumerPlugin(ModelPluginBase):
             consumer]
 
         def wrapper(cls, body=None):
-            schema = consumer_description.kwargs['schema']
-            schema.context['registry'] = self.registry
-            data = schema.load(loads(body))
+            data = consumer_description.adapt(cls.registry, body)
             return getattr(super(new_base, cls), consumer)(body=data)
 
         wrapper.__name__ = consumer

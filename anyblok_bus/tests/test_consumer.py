@@ -7,8 +7,7 @@
 # obtain one at http://mozilla.org/MPL/2.0/.
 from anyblok.tests.testcase import DBTestCase
 from anyblok.config import Configuration
-from anyblok_bus.consumer import (
-    bus_consumer, SchemaException, BusConfigurationException)
+from anyblok_bus.consumer import (bus_consumer, BusConfigurationException)
 from anyblok_bus.bloks.bus.exceptions import TwiceQueueConsumptionException
 from marshmallow import Schema, fields
 from json import dumps
@@ -59,18 +58,6 @@ class TestValidator(DBTestCase):
             @bus_consumer(queue_name='test', schema=schema)
             def decorated_method(cls, body=None):
                 return body
-
-    def test_whithout_schema(self):
-        with self.assertRaises(SchemaException):
-            self.init_registry(self.add_in_registry, schema=None)
-
-    def test_schema_whitout_load_method(self):
-
-        class WrongSchema:
-            pass
-
-        with self.assertRaises(SchemaException):
-            self.init_registry(self.add_in_registry, schema=WrongSchema)
 
     def test_schema_ok(self):
         registry = self.init_registry(self.add_in_registry, schema=OneSchema())
