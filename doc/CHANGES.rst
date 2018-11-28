@@ -11,6 +11,14 @@
 CHANGELOG
 =========
 
+1.2.0
+-----
+
+* Fixed Multiple consumer on the same model
+* Refactored bus console script, Added processes parameter on bus_consumer.
+  The goal is to define processes for one queue, by default all the queues 
+  are in the same process
+
 1.1.0 (2018-09-15)
 ------------------
 
