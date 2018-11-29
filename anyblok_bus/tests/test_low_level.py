@@ -9,7 +9,7 @@ from anyblok.tests.testcase import DBTestCase
 from anyblok_bus import bus_consumer
 from anyblok.column import Integer, String
 from marshmallow import Schema, fields
-from json import dumps
+from json import dumps, loads
 from anyblok import Declarations
 from anyblok_bus.status import MessageStatus
 import pika
@@ -213,7 +213,7 @@ class TestConsumer(DBTestCase):
             thread.stop()
             thread.join()
 
-    def test_consumer_without_validator(self):
+    def test_consumer_without_adapter(self):
 
         def add_in_registry():
 
@@ -225,7 +225,7 @@ class TestConsumer(DBTestCase):
 
                 @bus_consumer(queue_name='unittest_queue')
                 def decorated_method(cls, body=None):
-                    cls.insert(**body)
+                    cls.insert(**loads(body))
                     return MessageStatus.ACK
 
         with get_channel():
@@ -241,7 +241,7 @@ class TestConsumer(DBTestCase):
             self.assertEqual(registry.Test.query().count(), 0)
             self.assertEqual(registry.Bus.Message.query().count(), 0)
             registry.Bus.publish('unittest_exchange', 'unittest',
-                                 {'label': 'label', 'number': 1},
+                                 dumps({'label': 'label', 'number': 1}),
                                  'application/json')
 
             self.assertEqual(registry.Test.query().count(), 1)
