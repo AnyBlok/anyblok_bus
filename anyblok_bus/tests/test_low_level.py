@@ -212,3 +212,39 @@ class TestConsumer(DBTestCase):
             self.assertEqual(registry.Bus.Message.query().count(), 1)
             thread.stop()
             thread.join()
+
+    def test_consumer_without_validator(self):
+
+        def add_in_registry():
+
+            @Declarations.register(Declarations.Model)
+            class Test:
+                id = Integer(primary_key=True)
+                label = String()
+                number = Integer()
+
+                @bus_consumer(queue_name='unittest_queue')
+                def decorated_method(cls, body=None):
+                    cls.insert(**body)
+                    return MessageStatus.ACK
+
+        with get_channel():
+            bus_profile = Configuration.get('bus_profile')
+            registry = self.init_registry_with_bloks(
+                ('bus',), add_in_registry)
+            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
+            thread = AnyBlokWorker(registry, bus_profile)
+            thread.start()
+            while not thread.is_consumer_ready():
+                pass
+
+            self.assertEqual(registry.Test.query().count(), 0)
+            self.assertEqual(registry.Bus.Message.query().count(), 0)
+            registry.Bus.publish('unittest_exchange', 'unittest',
+                                 {'label': 'label', 'number': 1},
+                                 'application/json')
+
+            self.assertEqual(registry.Test.query().count(), 1)
+            self.assertEqual(registry.Bus.Message.query().count(), 0)
+            thread.stop()
+            thread.join()
