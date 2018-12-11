@@ -35,10 +35,12 @@ class Message:
         error = ""
         try:
             Model = self.registry.get(self.model)
-            with self.registry.begin_nested():  # savepoint
-                status = getattr(Model, self.method)(
-                    body=self.message.decode('utf-8'))
+            savepoint = self.registry.begin_nested()
+            status = getattr(Model, self.method)(
+                body=self.message.decode('utf-8'))
+            savepoint.commit()
         except Exception as e:
+            savepoint.rollback()
             logger.exception('Error during consumation of message %r' % self.id)
             status = MessageStatus.ERROR
             error = str(e)
