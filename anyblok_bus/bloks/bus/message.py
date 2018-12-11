@@ -35,8 +35,9 @@ class Message:
         error = ""
         try:
             Model = self.registry.get(self.model)
-            status = getattr(Model, self.method)(
-                body=self.message.decode('utf-8'))
+            with self.registry.begin_nested():  # savepoint
+                status = getattr(Model, self.method)(
+                    body=self.message.decode('utf-8'))
         except Exception as e:
             logger.exception('Error during consumation of message %r' % self.id)
             status = MessageStatus.ERROR
@@ -54,7 +55,6 @@ class Message:
         query = cls.query().order_by(cls.sequence)
         for consumer in query.all():
             try:
-                with cls.registry.begin_nested():  # savepoint
-                    consumer.consume()
+                consumer.consume()
             except Exception:
                 pass
