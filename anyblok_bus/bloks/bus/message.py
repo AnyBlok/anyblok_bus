@@ -41,7 +41,7 @@ class Message:
             savepoint.commit()
         except Exception as e:
             savepoint.rollback()
-            logger.exception('Error during consumation of message %r' % self.id)
+            logger.exception('Error during consumation of message %r', self.id)
             status = MessageStatus.ERROR
             error = str(e)
 
