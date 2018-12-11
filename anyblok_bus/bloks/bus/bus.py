@@ -9,6 +9,7 @@
 from anyblok import Declarations
 from anyblok.config import Configuration
 from .exceptions import PublishException, TwiceQueueConsumptionException
+from pika.exceptions import ChannelClosed
 import logging
 import pika
 
@@ -85,3 +86,32 @@ class Bus:
                 (Configuration.get('bus_processes', 1), grouped_consumers))
 
         return consumers
+
+    @classmethod
+    def get_unexisting_queues(cls):
+        profile_name = Configuration.get('bus_profile')
+        profile = cls.registry.Bus.Profile.query().filter_by(
+            name=profile_name
+        ).one_or_none()
+        parameters = pika.URLParameters(profile.url.url)
+        connection = pika.BlockingConnection(parameters)
+        unexisting_queues = []
+        for processes, definitions in cls.get_consumers():
+            for queue, Model, consumer in definitions:
+                channel = connection.channel()
+                try:
+                    channel.queue_declare(queue, passive=True)
+                    channel.close()
+                except ChannelClosed as exc:
+                    if exc.args[0] == 404:
+                        unexisting_queues.append(queue)
+                        logger.warning(
+                            "The queue %r consumed by '%s:%s' "
+                            "does not exist on %r",
+                            queue, Model.__registry_name__, consumer, profile)
+
+                    else:
+                        raise
+
+        connection.close()
+        return unexisting_queues

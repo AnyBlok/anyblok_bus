@@ -73,6 +73,16 @@ def anyblok_bus():  # noqa
     if not registry:
         exit(1)
 
+    unexisting_queues = registry.Bus.get_unexisting_queues()
+    if unexisting_queues:
+        profile_name = Configuration.get('bus_profile')
+        profile = registry.Bus.Profile.query().filter_by(
+            name=profile_name
+        ).one_or_none()
+        logger.critical("Some queues (%s) are required by consumers on %r",
+                        ', '.join(unexisting_queues), profile)
+        exit(1)
+
     all_consumers = registry.Bus.get_consumers()
     registry.close()  # close the registry to recreate it in each process
 

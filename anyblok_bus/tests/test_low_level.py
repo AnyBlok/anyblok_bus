@@ -248,3 +248,35 @@ class TestConsumer(DBTestCase):
             self.assertEqual(registry.Bus.Message.query().count(), 0)
             thread.stop()
             thread.join()
+
+    def test_get_unexisting_queues_ok(self):
+        with get_channel():
+            bus_profile = Configuration.get('bus_profile')
+            registry = self.init_registry_with_bloks(
+                ('bus',), self.add_in_registry)
+            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
+            self.assertEqual(registry.Bus.get_unexisting_queues(), [])
+
+    def test_get_unexisting_queues_ko(self):
+
+        def add_in_registry():
+
+            @Declarations.register(Declarations.Model)
+            class Test:
+                id = Integer(primary_key=True)
+                label = String()
+                number = Integer()
+
+                @bus_consumer(queue_name='unexisting_unittest_queue',
+                              schema=OneSchema())
+                def decorated_method(cls, body=None):
+                    cls.insert(**body)
+                    return MessageStatus.ACK
+
+        with get_channel():
+            bus_profile = Configuration.get('bus_profile')
+            registry = self.init_registry_with_bloks(
+                ('bus',), add_in_registry)
+            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
+            self.assertEqual(registry.Bus.get_unexisting_queues(),
+                             ['unexisting_unittest_queue'])

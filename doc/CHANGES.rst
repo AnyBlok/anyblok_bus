@@ -18,6 +18,8 @@ CHANGELOG
 * Refactored bus console script, Added processes parameter on bus_consumer.
   The goal is to define processes for one queue, by default all the queues 
   are in the same process
+* Add better logging when a queue is missing. If a queue is missing, then
+  workers won't start.
 * Added adapter parameter to transform bus message, the schema attribute
   become now a simple kwargs argument give to adapter.
 
