@@ -177,4 +177,4 @@ class TestValidator(DBTestCase):
             ('bus',), self.add_in_registry, schema=OneSchema())
         self.assertEqual(registry.Bus.get_consumers(),
                          [(Configuration.get('bus_processes', 1),
-                           [('test', registry.Test, 'decorated_method')])])
+                           [('test', 'Model.Test', 'decorated_method')])])

@@ -111,7 +111,7 @@ class Worker:
             self.registry.rollback()
             error = ""
             try:
-                Model = self.registry.get(model.__registry_name__)
+                Model = self.registry.get(model)
                 status = getattr(Model, method)(body=body.decode('utf-8'))
             except Exception as e:
                 logger.exception('Error during consumation of queue %r' % queue)
@@ -133,13 +133,9 @@ class Worker:
                             queue, basic_deliver.delivery_tag)
             elif status is MessageStatus.ERROR or status is None:
                 self.registry.Bus.Message.insert(
-                    content_type=properties.content_type,
-                    message=body,
-                    queue=queue,
-                    model=model.__registry_name__,
-                    method=method,
-                    error=error,
-                    sequence=basic_deliver.delivery_tag,
+                    content_type=properties.content_type, message=body,
+                    queue=queue, model=model, method=method,
+                    error=error, sequence=basic_deliver.delivery_tag,
                 )
                 self._channel.basic_ack(basic_deliver.delivery_tag)
                 logger.info('save message of the queue %s tag %r',
@@ -152,7 +148,7 @@ class Worker:
             self._channel.basic_consume(
                 on_message,
                 queue=queue,
-                arguments=dict(model=model.__registry_name__, method=method)
+                arguments=dict(model=model, method=method)
             )
         )
         return True

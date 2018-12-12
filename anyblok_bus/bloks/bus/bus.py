@@ -77,9 +77,11 @@ class Bus:
 
                 queues.append(queue)
                 if processes == 0:
-                    grouped_consumers.append((queue, Model, consumer))
+                    grouped_consumers.append(
+                        (queue, Model.__registry_name__, consumer))
                 else:
-                    consumers.append((processes, [(queue, Model, consumer)]))
+                    consumers.append((processes, [
+                        (queue, Model.__registry_name__, consumer)]))
 
         if grouped_consumers:
             consumers.append(
@@ -108,7 +110,7 @@ class Bus:
                         logger.warning(
                             "The queue %r consumed by '%s:%s' "
                             "does not exist on %r",
-                            queue, Model.__registry_name__, consumer, profile)
+                            queue, Model, consumer, profile)
 
                     else:
                         raise
