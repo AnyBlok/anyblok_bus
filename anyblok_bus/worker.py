@@ -111,7 +111,8 @@ class Worker:
             self.registry.rollback()
             error = ""
             try:
-                status = getattr(model, method)(body=body.decode('utf-8'))
+                Model = self.registry.get(model.__registry_name__)
+                status = getattr(Model, method)(body=body.decode('utf-8'))
             except Exception as e:
                 logger.exception('Error during consumation of queue %r' % queue)
                 self.registry.rollback()
