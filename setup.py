@@ -76,5 +76,5 @@ setup(
         'Programming Language :: Python :: 3.7',
     ],
     test_suite='tests',
-    tests_require=requirements + ['nose'],
+    tests_require=requirements + ['pytest'],
 )

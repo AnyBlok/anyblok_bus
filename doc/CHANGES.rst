@@ -26,9 +26,11 @@ CHANGELOG
   The adapter is not required.
 
   .. note::
-  
+
       To keep the compatibility, if no adapter is defined with a schema then
       the adapter is schema_adapter
+
+* Refactored unit test from nose to pytest
 
 1.1.0 (2018-09-15)
 ------------------
