@@ -35,7 +35,7 @@ with open(
 requirements = [
     'anyblok',
     'pika',
-    'marshmallow>=3.0.0b8',
+    'marshmallow==3.0.0rc5',
     'furl',
 ]
 
