@@ -23,7 +23,7 @@ except ImportError:
 
 from anyblok_bus.worker import Worker
 from threading import Thread
-pika_url = 'amqp://guest:guest@localhost:5672/%2F'
+pika_url = 'amqp://guest:guest@127.0.0.1:5672/%2F'
 
 
 @contextmanager
