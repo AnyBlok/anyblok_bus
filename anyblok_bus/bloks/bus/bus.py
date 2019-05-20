@@ -42,16 +42,17 @@ class Bus:
                 _connection = pika.BlockingConnection(parameters)
                 channel = _connection.channel()
                 channel.confirm_delivery()
-                if channel.basic_publish(
-                    exchange=exchange,
-                    routing_key=routing_key,
-                    body=data,
-                    properties=pika.BasicProperties(
-                        content_type=contenttype, delivery_mode=1)
-                ):
+                try:
+                    channel.basic_publish(
+                        exchange=exchange,
+                        routing_key=routing_key,
+                        body=data,
+                        properties=pika.BasicProperties(
+                            content_type=contenttype, delivery_mode=1)
+                    )
                     logger.info("Message published %r->%r",
                                 exchange, routing_key)
-                else:
+                except pika.exceptions.UnroutableError:
                     raise PublishException("Message cannot be published")
         except Exception as e:
             logger.error("publishing failed with : %r", e)

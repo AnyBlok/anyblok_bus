@@ -152,8 +152,11 @@ class TestConsumer(DBTestCase):
             while not thread.is_consumer_ready():
                 pass
 
+            print("thread started")
             thread.stop()
+            print("thread stop")
             thread.join()
+            print("thread stoped")
 
     def test_consume_close_with_consumer(self):
         with get_channel():
