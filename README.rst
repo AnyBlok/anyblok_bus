@@ -6,6 +6,9 @@
 .. v. 2.0. If a copy of the MPL was not distributed with this file,You can
 .. obtain one at http://mozilla.org/MPL/2.0/.
 
+.. image:: https://img.shields.io/pypi/pyversions/anyblok_bus.svg?longCache=True
+    :alt: Python versions
+
 .. image:: https://travis-ci.org/AnyBlok/anyblok_bus.svg?branch=master
     :target: https://travis-ci.org/AnyBlok/anyblok_bus
     :alt: Build status
