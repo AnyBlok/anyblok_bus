@@ -17,6 +17,7 @@ env:
     - ANYBLOK_DATABASE_NAME=travis_ci_test
     - ANYBLOK_DATABASE_USER=postgres
     - ANYBLOK_DATABASE_DRIVER=postgresql
+    - ANYBLOK_BUS_PROFILE=unittest
 
 matrix:
 
