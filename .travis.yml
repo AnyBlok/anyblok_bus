@@ -22,7 +22,7 @@ env:
 matrix:
   include:
     - python: "pypy3.5"
-    - env: ANYBLOK_DATABASE_DRIVER=postgresql+psycopg2cffi
+      env: ANYBLOK_DATABASE_DRIVER=postgresql+psycopg2cffi
 
 virtualenv:
   system_site_packages: false
