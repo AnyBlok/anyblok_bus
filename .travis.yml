@@ -41,6 +41,9 @@ install:
   - pip install coveralls
   - pip install .
 
+before_script:
+    - rabbitmqctl list_users
+
 script:
   - flake8 anyblok_bus
   - psql -c 'create database travis_ci_test;' -U postgres
