@@ -100,6 +100,7 @@ class TestPublish:
     def test_publish_wrong_exchange(self, registry):
         with get_channel() as channel:
             with pytest.raises((ChannelClosedByBroker,
+                                ProbableAccessDeniedError,
                                 ConnectionClosedByBroker)):
                 registry.Bus.publish('wrong_exchange', 'unittest',
                                      dumps({'hello': 'world'}),
