@@ -13,17 +13,15 @@ from json import dumps, loads
 from anyblok import Declarations
 from anyblok_bus.status import MessageStatus
 import pika
+from time import sleep
 from anyblok.config import Configuration
 from contextlib import contextmanager
-try:
-    from pika.exceptions import ChannelClosed, ConnectionClosedByBroker
-except ImportError:
-    from pika.exceptions import (
-        ProbableAccessDeniedError as ConnectionClosedByBroker, ChannelClosed)
+from pika.exceptions import (
+    ChannelClosed, ConnectionClosedByBroker, ProbableAccessDeniedError)
 
 from anyblok_bus.worker import Worker
 from threading import Thread
-pika_url = 'amqp://guest:guest@localhost:5672/%2F'
+pika_url = 'amqp://guest:guest@127.0.0.1:5672/%2F'
 
 
 @contextmanager
@@ -82,7 +80,8 @@ class TestPublish(DBTestCase):
         registry.Bus.Profile.insert(
             name=bus_profile,
             url='amqp://guest:guest@localhost:5672/%2Fwrongvhost')
-        with self.assertRaises(ConnectionClosedByBroker):
+        with self.assertRaises((ConnectionClosedByBroker,
+                                ProbableAccessDeniedError)):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'hello': 'world'}),
                                  'application/json')
@@ -185,6 +184,7 @@ class TestConsumer(DBTestCase):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
+            sleep(2)
 
             self.assertEqual(registry.Test.query().count(), 1)
             self.assertEqual(registry.Bus.Message.query().count(), 0)
@@ -207,6 +207,7 @@ class TestConsumer(DBTestCase):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label'}),
                                  'application/json')
+            sleep(2)
 
             self.assertEqual(registry.Test.query().count(), 0)
             self.assertEqual(registry.Bus.Message.query().count(), 1)
@@ -243,6 +244,7 @@ class TestConsumer(DBTestCase):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
+            sleep(2)
 
             self.assertEqual(registry.Test.query().count(), 1)
             self.assertEqual(registry.Bus.Message.query().count(), 0)
