@@ -15,11 +15,8 @@ from anyblok_bus.status import MessageStatus
 import pika
 from anyblok.config import Configuration
 from contextlib import contextmanager
-try:
-    from pika.exceptions import ChannelClosed, ConnectionClosedByBroker
-except ImportError:
-    from pika.exceptions import (
-        ProbableAccessDeniedError as ConnectionClosedByBroker, ChannelClosed)
+from pika.exceptions import (
+    ChannelClosed, ConnectionClosedByBroker, ProbableAccessDeniedError)
 
 from anyblok_bus.worker import Worker
 from threading import Thread
@@ -82,7 +79,8 @@ class TestPublish(DBTestCase):
         registry.Bus.Profile.insert(
             name=bus_profile,
             url='amqp://guest:guest@localhost:5672/%2Fwrongvhost')
-        with self.assertRaises(ConnectionClosedByBroker):
+        with self.assertRaises((ConnectionClosedByBroker,
+                                ProbableAccessDeniedError)):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'hello': 'world'}),
                                  'application/json')
