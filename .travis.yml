@@ -26,28 +26,14 @@ matrix:
 virtualenv:
   system_site_packages: false
 
-services:
-  - postgresql
-  - rabbitmq
-
 addons:
   apt:
       packages:
         - rabbitmq-server
 
-          # before_install:
-          #     - sudo apt-get update
-          #     - echo "deb https://dl.bintray.com/rabbitmq/debian xenial main" | sudo tee /etc/apt/sources.list.d/bintray.rabbitmq.list
-          #     - wget -O- https://www.rabbitmq.com/rabbitmq-release-signing-key.asc | sudo apt-key add -
-          #     - sudo apt-get update
-          #     - sudo apt-get install rabbitmq-server
-          #     - sudo systemctl start rabbitmq-server.service
-
-
-          # before_script:
-          #     - wget http://localhost:15672/cli/rabbitmqadmin
-          #     - chmod +x rabbitmqadmin
-          #     - rabbitmqadmin list users
+services:
+  - postgresql
+  - rabbitmq
 
 install:
   - pip install -U pip
