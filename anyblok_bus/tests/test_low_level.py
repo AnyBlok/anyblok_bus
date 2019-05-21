@@ -13,6 +13,7 @@ from json import dumps, loads
 from anyblok import Declarations
 from anyblok_bus.status import MessageStatus
 import pika
+from time import sleep
 from anyblok.config import Configuration
 from contextlib import contextmanager
 from pika.exceptions import (
@@ -183,6 +184,7 @@ class TestConsumer(DBTestCase):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
+            sleep(1)
 
             self.assertEqual(registry.Test.query().count(), 1)
             self.assertEqual(registry.Bus.Message.query().count(), 0)
@@ -205,6 +207,7 @@ class TestConsumer(DBTestCase):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label'}),
                                  'application/json')
+            sleep(1)
 
             self.assertEqual(registry.Test.query().count(), 0)
             self.assertEqual(registry.Bus.Message.query().count(), 1)
@@ -241,6 +244,7 @@ class TestConsumer(DBTestCase):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
+            sleep(1)
 
             self.assertEqual(registry.Test.query().count(), 1)
             self.assertEqual(registry.Bus.Message.query().count(), 0)
