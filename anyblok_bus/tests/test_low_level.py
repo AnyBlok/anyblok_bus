@@ -17,10 +17,8 @@ import pika
 from time import sleep
 from anyblok.config import Configuration
 from contextlib import contextmanager
-from pika.exceptions import (
-    ChannelClosed, ConnectionClosedByBroker, ChannelClosedByBroker, 
-    ProbableAccessDeniedError)
-
+from pika.exceptions import (ConnectionClosedByBroker, ChannelClosedByBroker,
+                             ProbableAccessDeniedError)
 from anyblok_bus.worker import Worker
 from threading import Thread
 pika_url = 'amqp://guest:guest@127.0.0.1:5672/%2F'
@@ -175,9 +173,7 @@ class TestConsumer:
         while not thread.is_consumer_ready():
             pass
 
-        print('==> before sleep')
-        time.sleep(10)
-        print('==> after sleep')
+        sleep(10)
         thread.stop()
         thread.join()
 
@@ -199,9 +195,7 @@ class TestConsumer:
         while not thread.is_consumer_ready():
             pass
 
-        print('==> before sleep')
-        time.sleep(10)
-        print('==> after sleep')
+        sleep(10)
         thread.stop()
         thread.join()
 
