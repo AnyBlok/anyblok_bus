@@ -44,10 +44,10 @@ addons:
           #     - sudo systemctl start rabbitmq-server.service
 
 
-before_script:
-    - wget http://localhost:15672/cli/rabbitmqadmin
-    - chmod +x rabbitmqadmin
-    - rabbitmqadmin list users
+          # before_script:
+          #     - wget http://localhost:15672/cli/rabbitmqadmin
+          #     - chmod +x rabbitmqadmin
+          #     - rabbitmqadmin list users
 
 install:
   - pip install -U pip
