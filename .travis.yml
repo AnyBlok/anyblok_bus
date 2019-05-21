@@ -19,9 +19,14 @@ env:
     - ANYBLOK_DATABASE_DRIVER=postgresql
 
 matrix:
-  include:
-    - python: "pypy3.5"
-      env: ANYBLOK_DATABASE_DRIVER=postgresql+psycopg2cffi
+    include:
+      - python: "pypy3.5"
+        env: ANYBLOK_DATABASE_DRIVER=postgresql+psycopg2cffi
+    allow_failures:
+      - python: "3.7-dev"
+      - python: "3.8-dev"
+      - python: "nightly"
+      - python: "pypy3.5"
 
 virtualenv:
   system_site_packages: false

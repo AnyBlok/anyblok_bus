@@ -184,7 +184,7 @@ class TestConsumer(DBTestCase):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
-            sleep(1)
+            sleep(2)
 
             self.assertEqual(registry.Test.query().count(), 1)
             self.assertEqual(registry.Bus.Message.query().count(), 0)
@@ -207,7 +207,7 @@ class TestConsumer(DBTestCase):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label'}),
                                  'application/json')
-            sleep(1)
+            sleep(2)
 
             self.assertEqual(registry.Test.query().count(), 0)
             self.assertEqual(registry.Bus.Message.query().count(), 1)
@@ -244,7 +244,7 @@ class TestConsumer(DBTestCase):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
-            sleep(1)
+            sleep(2)
 
             self.assertEqual(registry.Test.query().count(), 1)
             self.assertEqual(registry.Bus.Message.query().count(), 0)
