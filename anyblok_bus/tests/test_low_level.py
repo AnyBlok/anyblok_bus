@@ -14,14 +14,16 @@ from json import dumps, loads
 from anyblok import Declarations
 from anyblok_bus.status import MessageStatus
 import pika
+from time import sleep
 from anyblok.config import Configuration
 from contextlib import contextmanager
-from pika.exceptions import ConnectionClosedByBroker, ChannelClosedByBroker
-import time
+from pika.exceptions import (
+    ChannelClosed, ConnectionClosedByBroker, ChannelClosedByBroker, 
+    ProbableAccessDeniedError)
 
 from anyblok_bus.worker import Worker
 from threading import Thread
-pika_url = 'amqp://guest:guest@localhost:5672/%2F'
+pika_url = 'amqp://guest:guest@127.0.0.1:5672/%2F'
 
 
 @contextmanager
@@ -91,7 +93,8 @@ class TestPublish:
         registry.Bus.Profile.insert(
             name=bus_profile,
             url='amqp://guest:guest@localhost:5672/%2Fwrongvhost')
-        with pytest.raises(ConnectionClosedByBroker):
+        with pytest.raises((ConnectionClosedByBroker,
+                            ProbableAccessDeniedError)):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'hello': 'world'}),
                                  'application/json')
@@ -164,6 +167,7 @@ class TestConsumer:
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
+            sleep(2)
 
         bus_profile = Configuration.get('bus_profile')
         thread = AnyBlokWorker(registry, bus_profile)
@@ -187,6 +191,7 @@ class TestConsumer:
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label'}),
                                  'application/json')
+            sleep(2)
 
         bus_profile = Configuration.get('bus_profile')
         thread = AnyBlokWorker(registry, bus_profile)
@@ -252,6 +257,7 @@ class TestConsumer2:
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
+            sleep(2)
 
             assert registry.Test.query().count() == 1
             assert registry.Bus.Message.query().count() == 0
