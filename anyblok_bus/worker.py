@@ -154,39 +154,6 @@ class Worker:
         logger.info('Creating a new channel')
         self._connection.channel(on_open_callback=self.on_channel_open)
 
-    def on_connection_open_error(self, _unused_connection, err):
-        """This method is called by pika if the connection to RabbitMQ
-        can't be established.
-        :param pika.SelectConnection _unused_connection: The connection
-        :param Exception err: The error
-        """
-        logger.error('Connection open failed: %s', err)
-        self.reconnect()
-
-    def on_connection_closed(self, _unused_connection, reason):
-        """This method is invoked by pika when the connection to RabbitMQ is
-        closed unexpectedly. Since it is unexpected, we will reconnect to
-        RabbitMQ if it disconnects.
-
-        :param pika.connection.Connection connection: The closed connection obj
-        :param Exception reason: exception representing reason for loss of
-            connection.
-        """
-        self._channel = None
-        if self._closing:
-            self._connection.ioloop.stop()
-        else:
-            logger.warning('Connection closed, reconnect necessary: %s', reason)
-            self.reconnect()
-
-    def reconnect(self):
-        """Will be invoked if the connection can't be opened or is
-        closed. Indicates that a reconnect is necessary then stops the
-        ioloop.
-        """
-        self.should_reconnect = True
-        self.stop()
-
     def on_channel_open(self, channel):
         """This method is invoked by pika when the channel has been opened.
         The channel object is passed in so we can make use of it.
