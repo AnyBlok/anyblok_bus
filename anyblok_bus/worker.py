@@ -6,6 +6,7 @@
 # v. 2.0. If a copy of the MPL was not distributed with this file,You can
 # obtain one at http://mozilla.org/MPL/2.0/.
 import functools
+import time
 from anyblok_bus.status import MessageStatus
 from logging import getLogger
 from pika import SelectConnection, URLParameters
@@ -399,3 +400,40 @@ class Worker:
                 self._connection.ioloop.stop()
 
             logger.info('Stopped')
+
+
+class ReconnectingWorker:
+
+    def __init__(self, *args):
+        self.args = args
+        self._reconnect_delay = 0
+        self._consumer = Worker(*args)
+
+    def start(self):
+        while True:
+            try:
+                self._consumer.start()
+            except KeyboardInterrupt:
+                self._consumer.stop()
+                break
+
+            self._maybe_reconnect()
+
+    def _maybe_reconnect(self):
+        if self._consumer.should_reconnect:
+            self._consumer.stop()
+            reconnect_delay = self._get_reconnect_delay()
+            logger.info('Reconnecting after %d seconds', reconnect_delay)
+            time.sleep(reconnect_delay)
+            self._consumer = Worker(*self.args)
+
+    def _get_reconnect_delay(self):
+        if self._consumer.was_consuming:
+            self._reconnect_delay = 0
+        else:
+            self._reconnect_delay += 1
+
+        if self._reconnect_delay > 30:
+            self._reconnect_delay = 30
+
+        return self._reconnect_delay

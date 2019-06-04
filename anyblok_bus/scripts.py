@@ -12,7 +12,7 @@ from anyblok import start
 from anyblok.config import Configuration
 from anyblok.blok import BlokManager
 from anyblok.registry import RegistryManager
-from .worker import Worker
+from .worker import ReconnectingWorker
 from .release import version
 from logging import getLogger
 
@@ -34,7 +34,7 @@ def bus_worker_process(logging_fd, consumers):
     try:
         logging_pipe = os.fdopen(logging_fd, "w")
         registry = RegistryManager.get(db_name, loadwithoutmigration=True)
-        worker = Worker(registry, profile, consumers)
+        worker = ReconnectingWorker(registry, profile, consumers)
         worker.start()
     except ImportError as e:
         logger.critical(e)
