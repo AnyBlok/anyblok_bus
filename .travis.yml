@@ -45,7 +45,7 @@ services:
 install:
   - pip install -U pip
   - pip install wheel
-  - pip install -U flake8 coverage pytest pytest-cov
+  - pip install -U flake8 pytest pytest-cov
   - if [[ $TRAVIS_PYTHON_VERSION == 'pypy3.5' ]]; then pip install psycopg2cffi; else pip install psycopg2-binary; fi
   - pip install sqlalchemy
   - pip install coverage

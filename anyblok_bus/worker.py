@@ -6,6 +6,7 @@
 # v. 2.0. If a copy of the MPL was not distributed with this file,You can
 # obtain one at http://mozilla.org/MPL/2.0/.
 import functools
+import time
 from anyblok_bus.status import MessageStatus
 from logging import getLogger
 from pika import SelectConnection, URLParameters
@@ -255,6 +256,9 @@ class Worker:
 
             """
             logger.info(
+                'Received message on %r # %s from %s',
+                queue, basic_deliver.delivery_tag, properties.app_id)
+            logger.debug(
                 'Received message on %r # %s from %s: %s',
                 queue, basic_deliver.delivery_tag, properties.app_id, body)
             self.registry.rollback()
@@ -262,6 +266,10 @@ class Worker:
             try:
                 Model = self.registry.get(model)
                 status = getattr(Model, method)(body=body.decode('utf-8'))
+                logger.debug('Message delivery_tag=%r and app_id=%r '
+                             'is consumed with status=%r',
+                             basic_deliver.delivery_tag, properties.app_id,
+                             status)
             except Exception as e:
                 logger.exception('Error during consumation of queue %r' % queue)
                 self.registry.rollback()
@@ -398,3 +406,42 @@ class Worker:
                 self._connection.ioloop.stop()
 
             logger.info('Stopped')
+
+
+class ReconnectingWorker:
+
+    def __init__(self, *args):
+        self.args = args
+        self._reconnect_delay = 0
+        self._consumer = Worker(*args)
+
+    def start(self):
+        while True:
+            try:
+                logger.debug('Start to consume for %r', self.args)
+                self._consumer.start()
+            except KeyboardInterrupt:
+                self._consumer.stop()
+                break
+
+            self._maybe_reconnect()
+
+    def _maybe_reconnect(self):
+        logger.debug('Check if the consumer must be restarted %r', self.args)
+        if self._consumer.should_reconnect:
+            self._consumer.stop()
+            reconnect_delay = self._get_reconnect_delay()
+            logger.info('Reconnecting after %d seconds', reconnect_delay)
+            time.sleep(reconnect_delay)
+            self._consumer = Worker(*self.args)
+
+    def _get_reconnect_delay(self):
+        if self._consumer.was_consuming:
+            self._reconnect_delay = 0
+        else:
+            self._reconnect_delay += 1
+
+        if self._reconnect_delay > 30:
+            self._reconnect_delay = 30
+
+        return self._reconnect_delay
