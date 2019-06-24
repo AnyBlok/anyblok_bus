@@ -5,7 +5,8 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License,
 # v. 2.0. If a copy of the MPL was not distributed with this file,You can
 # obtain one at http://mozilla.org/MPL/2.0/.
-from anyblok.tests.testcase import DBTestCase
+import pytest
+from .conftest import init_registry_with_bloks
 from anyblok_bus import bus_consumer
 from anyblok.column import Integer, String
 from marshmallow import Schema, fields
@@ -16,9 +17,8 @@ import pika
 from time import sleep
 from anyblok.config import Configuration
 from contextlib import contextmanager
-from pika.exceptions import (
-    ChannelClosed, ConnectionClosedByBroker, ProbableAccessDeniedError)
-
+from pika.exceptions import (ConnectionClosedByBroker, ChannelClosedByBroker,
+                             ProbableAccessDeniedError)
 from anyblok_bus.worker import Worker
 from threading import Thread
 pika_url = 'amqp://guest:guest@127.0.0.1:5672/%2F'
@@ -31,22 +31,14 @@ def get_channel():
     channel = connection.channel()
     channel.exchange_declare('unittest_exchange', durable=True)
     channel.queue_declare('unittest_queue', durable=True)
-    channel.queue_purge('unittest_queue')  # case of the queue exist
     channel.queue_bind('unittest_queue', 'unittest_exchange',
                        routing_key='unittest')
+    channel.queue_purge('unittest_queue')  # case of the queue exist
     try:
-        while True:
-            method_frame, header_frame, body = channel.basic_get(
-                'unittest_queue')
-            if method_frame is None:
-                break
-
         yield channel
     finally:
-        if channel and not channel.is_closed:
-            channel.close()
-        if connection and not connection.is_closed:
-            connection.close()
+        channel.close()
+        connection.close()
 
 
 class OneSchema(Schema):
@@ -54,44 +46,62 @@ class OneSchema(Schema):
     number = fields.Integer(required=True)
 
 
-class TestPublish(DBTestCase):
+def add_in_registry():
 
-    @classmethod
-    def init_configuration_manager(cls, **env):
-        bus_profile = Configuration.get('bus_profile') or 'unittest'
-        env.update(dict(bus_profile=bus_profile))
-        super(TestPublish, cls).init_configuration_manager(**env)
+    @Declarations.register(Declarations.Model)
+    class Test:
+        id = Integer(primary_key=True)
+        label = String()
+        number = Integer()
 
-    def test_publish_ok(self):
+        @bus_consumer(queue_name='unittest_queue', schema=OneSchema())
+        def decorated_method(cls, body=None):
+            cls.insert(**body)
+            return MessageStatus.ACK
+
+
+@pytest.fixture(scope="class")
+def registry(request, bloks_loaded):
+    bus_profile = Configuration.get('bus_profile')
+    registry = init_registry_with_bloks(('bus',), add_in_registry)
+    registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
+    request.addfinalizer(registry.close)
+    return registry
+
+
+class TestPublish:
+
+    @pytest.fixture(autouse=True)
+    def transact(self, request, registry):
+        transaction = registry.begin_nested()
+        request.addfinalizer(transaction.rollback)
+
+    def test_publish_ok(self, registry):
         with get_channel() as channel:
-            bus_profile = Configuration.get('bus_profile')
-            registry = self.init_registry_with_bloks(('bus',), None)
-            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'hello': 'world'}),
                                  'application/json')
             method_frame, header_frame, body = channel.basic_get(
                 'unittest_queue')
-            self.assertIsNotNone(method_frame)
+            assert method_frame is not None
 
-    def test_publish_wrong_url(self):
+    def test_publish_wrong_url(self, registry):
         bus_profile = Configuration.get('bus_profile')
-        registry = self.init_registry_with_bloks(('bus',), None)
+        registry.Bus.Profile.query().get(bus_profile).delete()
         registry.Bus.Profile.insert(
             name=bus_profile,
             url='amqp://guest:guest@localhost:5672/%2Fwrongvhost')
-        with self.assertRaises((ConnectionClosedByBroker,
-                                ProbableAccessDeniedError)):
+        with pytest.raises((ConnectionClosedByBroker,
+                            ProbableAccessDeniedError)):
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'hello': 'world'}),
                                  'application/json')
 
-    def test_publish_wrong_exchange(self):
+    def test_publish_wrong_exchange(self, registry):
         with get_channel() as channel:
-            bus_profile = Configuration.get('bus_profile')
-            registry = self.init_registry_with_bloks(('bus',), None)
-            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
-            with self.assertRaises(ChannelClosed):
+            with pytest.raises((ChannelClosedByBroker,
+                                ProbableAccessDeniedError,
+                                ConnectionClosedByBroker)):
                 registry.Bus.publish('wrong_exchange', 'unittest',
                                      dumps({'hello': 'world'}),
                                      'application/json')
@@ -120,32 +130,16 @@ class AnyBlokWorker(Thread):
         self.worker.stop()
 
 
-class TestConsumer(DBTestCase):
+class TestConsumer:
 
-    @classmethod
-    def init_configuration_manager(cls, **env):
-        bus_profile = Configuration.get('bus_profile') or 'unittest'
-        env.update(dict(bus_profile=bus_profile))
-        super(TestConsumer, cls).init_configuration_manager(**env)
+    @pytest.fixture(autouse=True)
+    def transact(self, request, registry):
+        transaction = registry.begin_nested()
+        request.addfinalizer(transaction.rollback)
 
-    def add_in_registry(self):
-
-        @Declarations.register(Declarations.Model)
-        class Test:
-            id = Integer(primary_key=True)
-            label = String()
-            number = Integer()
-
-            @bus_consumer(queue_name='unittest_queue', schema=OneSchema())
-            def decorated_method(cls, body=None):
-                cls.insert(**body)
-                return MessageStatus.ACK
-
-    def test_consume_close_without_consumer(self):
+    def test_consume_close_without_consumer(self, registry):
         with get_channel():
             bus_profile = Configuration.get('bus_profile')
-            registry = self.init_registry_with_bloks(('bus',), None)
-            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
             thread = AnyBlokWorker(registry, bus_profile)
             thread.start()
             while not thread.is_consumer_ready():
@@ -154,12 +148,9 @@ class TestConsumer(DBTestCase):
             thread.stop()
             thread.join()
 
-    def test_consume_close_with_consumer(self):
+    def test_consume_close_with_consumer(self, registry):
         with get_channel():
             bus_profile = Configuration.get('bus_profile')
-            registry = self.init_registry_with_bloks(
-                ('bus',), self.add_in_registry)
-            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
             thread = AnyBlokWorker(registry, bus_profile)
             thread.start()
             while not thread.is_consumer_ready():
@@ -168,51 +159,69 @@ class TestConsumer(DBTestCase):
             thread.stop()
             thread.join()
 
-    def test_consume_ok(self):
+    def test_consume_ok(self, registry):
+        assert registry.Test.query().count() == 0
+        assert registry.Bus.Message.query().count() == 0
         with get_channel():
-            bus_profile = Configuration.get('bus_profile')
-            registry = self.init_registry_with_bloks(
-                ('bus',), self.add_in_registry)
-            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
-            thread = AnyBlokWorker(registry, bus_profile)
-            thread.start()
-            while not thread.is_consumer_ready():
-                pass
-
-            self.assertEqual(registry.Test.query().count(), 0)
-            self.assertEqual(registry.Bus.Message.query().count(), 0)
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
             sleep(2)
 
-            self.assertEqual(registry.Test.query().count(), 1)
-            self.assertEqual(registry.Bus.Message.query().count(), 0)
-            thread.stop()
-            thread.join()
+        bus_profile = Configuration.get('bus_profile')
+        thread = AnyBlokWorker(registry, bus_profile)
+        thread.start()
+        while not thread.is_consumer_ready():
+            pass
 
-    def test_consume_ko(self):
+        sleep(10)
+        thread.stop()
+        thread.join()
+
+        assert registry.Test.query().count() == 1
+        assert registry.Bus.Message.query().count() == 0
+
+    def test_consume_ko(self, registry):
+        assert registry.Test.query().count() == 0
+        assert registry.Bus.Message.query().count() == 0
         with get_channel():
-            bus_profile = Configuration.get('bus_profile')
-            registry = self.init_registry_with_bloks(
-                ('bus',), self.add_in_registry)
-            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
-            thread = AnyBlokWorker(registry, bus_profile)
-            thread.start()
-            while not thread.is_consumer_ready():
-                pass
-
-            self.assertEqual(registry.Test.query().count(), 0)
-            self.assertEqual(registry.Bus.Message.query().count(), 0)
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label'}),
                                  'application/json')
             sleep(2)
 
-            self.assertEqual(registry.Test.query().count(), 0)
-            self.assertEqual(registry.Bus.Message.query().count(), 1)
-            thread.stop()
-            thread.join()
+        bus_profile = Configuration.get('bus_profile')
+        thread = AnyBlokWorker(registry, bus_profile)
+        thread.start()
+        while not thread.is_consumer_ready():
+            pass
+
+        sleep(10)
+        thread.stop()
+        thread.join()
+
+        assert registry.Test.query().count() == 0
+        assert registry.Bus.Message.query().count() == 1
+
+    def test_get_unexisting_queues_ok(self, registry):
+        with get_channel():
+            assert registry.Bus.get_unexisting_queues() == []
+
+
+class TestConsumer2:
+
+    @pytest.fixture(autouse=True)
+    def close_registry(self, request, bloks_loaded):
+
+        def close():
+            if hasattr(self, 'registry'):
+                self.registry.close()
+
+        request.addfinalizer(close)
+
+    def init_registry_with_bloks(self, *args, **kwargs):
+        self.registry = init_registry_with_bloks(('bus',), *args, **kwargs)
+        return self.registry
 
     def test_consumer_without_adapter(self):
 
@@ -231,33 +240,24 @@ class TestConsumer(DBTestCase):
 
         with get_channel():
             bus_profile = Configuration.get('bus_profile')
-            registry = self.init_registry_with_bloks(
-                ('bus',), add_in_registry)
+            registry = self.init_registry_with_bloks(add_in_registry)
             registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
             thread = AnyBlokWorker(registry, bus_profile)
             thread.start()
             while not thread.is_consumer_ready():
                 pass
 
-            self.assertEqual(registry.Test.query().count(), 0)
-            self.assertEqual(registry.Bus.Message.query().count(), 0)
+            assert registry.Test.query().count() == 0
+            assert registry.Bus.Message.query().count() == 0
             registry.Bus.publish('unittest_exchange', 'unittest',
                                  dumps({'label': 'label', 'number': 1}),
                                  'application/json')
             sleep(2)
 
-            self.assertEqual(registry.Test.query().count(), 1)
-            self.assertEqual(registry.Bus.Message.query().count(), 0)
+            assert registry.Test.query().count() == 1
+            assert registry.Bus.Message.query().count() == 0
             thread.stop()
             thread.join()
-
-    def test_get_unexisting_queues_ok(self):
-        with get_channel():
-            bus_profile = Configuration.get('bus_profile')
-            registry = self.init_registry_with_bloks(
-                ('bus',), self.add_in_registry)
-            registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
-            self.assertEqual(registry.Bus.get_unexisting_queues(), [])
 
     def test_get_unexisting_queues_ko(self):
 
@@ -277,8 +277,9 @@ class TestConsumer(DBTestCase):
 
         with get_channel():
             bus_profile = Configuration.get('bus_profile')
-            registry = self.init_registry_with_bloks(
-                ('bus',), add_in_registry)
+            registry = self.init_registry_with_bloks(add_in_registry)
             registry.Bus.Profile.insert(name=bus_profile, url=pika_url)
-            self.assertEqual(registry.Bus.get_unexisting_queues(),
-                             ['unexisting_unittest_queue'])
+            assert (
+                registry.Bus.get_unexisting_queues() ==
+                ['unexisting_unittest_queue']
+            )

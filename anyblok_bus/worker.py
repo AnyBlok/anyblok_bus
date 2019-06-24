@@ -162,7 +162,6 @@ class Worker:
         Since the channel is now open, we'll declare the exchange to use.
 
         :param pika.channel.Channel channel: The channel object
-
         """
         logger.info('Channel opened')
         self._channel = channel

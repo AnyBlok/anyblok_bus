@@ -77,5 +77,5 @@ setup(
         'Programming Language :: Python :: 3.8',
     ],
     test_suite='tests',
-    tests_require=requirements + ['nose'],
+    tests_require=requirements + ['pytest'],
 )
