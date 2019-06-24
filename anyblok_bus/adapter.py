@@ -16,12 +16,12 @@ def schema_adapter(registry, body, schema=None, **kwargs):
     try:
         schema.context['registry'] = registry
         res = schema.load(loads(body))
-        logger.exception(
+        logger.info(
             "[schema_adapter] Deserialize body=%r with schema=%r: %r",
             body, schema, res)
         return res
     except Exception as e:
-        logger.error(
+        logger.exception(
             "[schema_adapter] Failed to deserialize body=%r with schema=%r: "
             "%r", body, schema, str(e))
         raise
