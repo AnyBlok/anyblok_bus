@@ -257,6 +257,9 @@ class Worker:
 
             """
             logger.info(
+                'Received message on %r # %s from %s',
+                queue, basic_deliver.delivery_tag, properties.app_id)
+            logger.debug(
                 'Received message on %r # %s from %s: %s',
                 queue, basic_deliver.delivery_tag, properties.app_id, body)
             self.registry.rollback()
@@ -264,6 +267,10 @@ class Worker:
             try:
                 Model = self.registry.get(model)
                 status = getattr(Model, method)(body=body.decode('utf-8'))
+                logger.debug('Message delivery_tag=%r and app_id=%r '
+                             'is consumed with status=%r',
+                             basic_deliver.delivery_tag, properties.app_id,
+                             status)
             except Exception as e:
                 logger.exception('Error during consumation of queue %r' % queue)
                 self.registry.rollback()
@@ -412,6 +419,7 @@ class ReconnectingWorker:
     def start(self):
         while True:
             try:
+                logger.debug('Start to consume for %r', self.args)
                 self._consumer.start()
             except KeyboardInterrupt:
                 self._consumer.stop()
@@ -420,6 +428,7 @@ class ReconnectingWorker:
             self._maybe_reconnect()
 
     def _maybe_reconnect(self):
+        logger.debug('Check if the consumer must be restarted %r', self.args)
         if self._consumer.should_reconnect:
             self._consumer.stop()
             reconnect_delay = self._get_reconnect_delay()
