@@ -2,6 +2,7 @@
 ..
 ..    Copyright (C) 2017 Jean-Sebastien SUZANNE <jssuzanne@anybox.fr>
 ..    Copyright (C) 2018 Jean-Sebastien SUZANNE <jssuzanne@anybox.fr>
+..    Copyright (C) 2019 Jean-Sebastien SUZANNE <js.suzanne@gmail.com>
 ..
 .. This Source Code Form is subject to the terms of the Mozilla Public License,
 .. v. 2.0. If a copy of the MPL was not distributed with this file,You can
@@ -60,7 +61,7 @@ by the decorator **anyblok_bus.bus_consumer**::
 Dependencies
 ------------
 
-AnyBlok / Bus works with **Python 3.3** and later and `pika <https://pika.readthedocs.io>`_. The install process will
+AnyBlok / Bus works with **Python >= 3.4** and later and `pika >= 1.0.1 <https://pika.readthedocs.io>`_. The install process will
 ensure that `AnyBlok <http://doc.anyblok.org>`_ is installed, in addition to other 
 dependencies. The latest version of them is strongly recommended.
 
@@ -80,6 +81,7 @@ Contributors
 `Sensee <http://sensee.com>`_ team:
 
 * Julien SZKUDLAPSKI
+* Jean-Sébastien Suzanne
 
 Bugs
 ----

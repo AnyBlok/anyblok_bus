@@ -1,6 +1,7 @@
 .. This file is a part of the AnyBlok / Bus project
 ..
 ..    Copyright (C) 2018 Jean-Sebastien SUZANNE <jssuzanne@anybox.fr>
+..    Copyright (C) 2019 Jean-Sebastien SUZANNE <js.suzanne@gmail.com.fr>
 ..
 .. This Source Code Form is subject to the terms of the Mozilla Public License,
 .. v. 2.0. If a copy of the MPL was not distributed with this file,You can
@@ -11,9 +12,10 @@
 CHANGELOG
 =========
 
-1.2.0
------
+1.2.0 (2019-06-24)
+------------------
 
+* Update version to use pika >= 1.0.1
 * Fixed Multiple consumer on the same model
 * Refactored bus console script, Added processes parameter on bus_consumer.
   The goal is to define processes for one queue, by default all the queues 
