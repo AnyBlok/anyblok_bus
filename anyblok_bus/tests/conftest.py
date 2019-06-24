@@ -6,6 +6,7 @@
 # This Source Code Form is subject to the terms of the Mozilla Public License,
 # v. 2.0. If a copy of the MPL was not distributed with this file,You can
 # obtain one at http://mozilla.org/MPL/2.0/.
+from anyblok.conftest import *  # noqa
 from anyblok.tests.conftest import *  # noqa
 from copy import deepcopy
 from anyblok.environment import EnvironmentManager
