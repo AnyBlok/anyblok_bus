@@ -20,8 +20,8 @@ def schema_adapter(registry, body, schema=None, **kwargs):
             "[schema_adapter] Deserialize body=%r with schema=%r: %r",
             body, schema, res)
         return res
-    except Exception:
-        logger.exception(
-            "[schema_adapter] Failed to deserialize body=%r with schema=%r",
-            body, schema)
+    except Exception as e:
+        logger.error(
+            "[schema_adapter] Failed to deserialize body=%r with schema=%r: "
+            "%r", body, schema, str(e))
         raise
